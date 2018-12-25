@@ -745,10 +745,20 @@ void CRenderEngine::DrawText(HDC hDC, CPaintManagerUI* pManager, RECT& rc, LPCTS
 			stringFormat.SetLineAlignment(Gdiplus::StringAlignmentNear);
 		}
 
+		
+#ifndef  UNICODE
+		int pOutSize = MultiByteToWideChar(NULL, NULL, pstrText, _tcslen(pstrText), NULL, 0);
+		LPWSTR lpwStr = new WCHAR[pOutSize];
+		memset((void*)*lpwStr, 0, sizeof(WCHAR) * pOutSize);
+		MultiByteToWideChar(NULL, NULL, pstrText, _tcslen(pstrText), lpwStr, pOutSize);
+#else
+		LPCTSTR lpwStr = pstrText;
+#endif
+
 		if ((uStyle & DT_CALCRECT) != 0)
 		{
 			Gdiplus::RectF bounds;
-			graphics.MeasureString(pstrText, -1, &font, rectF, &stringFormat, &bounds);
+			graphics.MeasureString(lpwStr, -1, &font, rectF, &stringFormat, &bounds);
 
 			// MeasureString存在计算误差，这里加一像素
 			rc.bottom = rc.top + (long)bounds.Height + 1;
@@ -756,7 +766,8 @@ void CRenderEngine::DrawText(HDC hDC, CPaintManagerUI* pManager, RECT& rc, LPCTS
 		}
 		else
 		{
-			graphics.DrawString(pstrText, -1, &font, rectF, &stringFormat, &brush);
+			
+			graphics.DrawString(lpwStr, -1, &font, rectF, &stringFormat, &brush);
 		}
 	}
 	else

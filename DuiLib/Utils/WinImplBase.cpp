@@ -4,10 +4,27 @@ namespace DuiLib
 {
 
 //////////////////////////////////////////////////////////////////////////
-
+LPBYTE WindowImplBase::m_lpResourceZIPBuffer=NULL;
 
 DUI_BEGIN_MESSAGE_MAP(WindowImplBase,CNotifyPump)
-	DUI_ON_MSGTYPE(DUI_MSGTYPE_CLICK,OnClick)
+	DUI_ON_MSGTYPE(DUI_MSGTYPE_WINDOWINIT, OnWindowInit)
+	DUI_ON_MSGTYPE(DUI_MSGTYPE_CLICK, OnClick)
+	DUI_ON_MSGTYPE(DUI_MSGTYPE_ITEMCLICK, OnItemClick)
+	DUI_ON_MSGTYPE(DUI_MSGTYPE_ITEMACTIVATE, OnItemActivate	)
+	DUI_ON_MSGTYPE(DUI_MSGTYPE_ITEMSELECT, OnItemSelect)
+	DUI_ON_MSGTYPE(DUI_MSGTYPE_ITEMDBCLICK, OnItemDbclk)
+	DUI_ON_MSGTYPE(DUI_MSGTYPE_ITEMEXPAND, OnItemExpand)
+	DUI_ON_MSGTYPE(DUI_MSGTYPE_ITEMRCLICK, OnItemRClick)
+	DUI_ON_MSGTYPE(DUI_MSGTYPE_MOUSEENTER, OnMouseEnter)
+	DUI_ON_MSGTYPE(DUI_MSGTYPE_MOUSELEAVE, OnMouseLeave)
+	DUI_ON_MSGTYPE(DUI_MSGTYPE_SCROLL, OnScroll)
+	DUI_ON_MSGTYPE(DUI_MSGTYPE_DROPDOWN, OnDropDown)
+	DUI_ON_MSGTYPE(DUI_MSGTYPE_TABSELECT, OnTabSelect)
+	DUI_ON_MSGTYPE(DUI_MSGTYPE_HEADERCLICK, OnHeaderClick)
+	DUI_ON_MSGTYPE(DUI_MSGTYPE_TEXTCHANGED, OnTextChanged)
+	DUI_ON_MSGTYPE(DUI_MSGTYPE_VALUECHANGED, OnValueChanged)
+	DUI_ON_MSGTYPE(DUI_MSGTYPE_SELECTCHANGED, OnSelectChanged)
+	DUI_ON_MSGTYPE(DUI_MSGTYPE_UNSELECTED, OnUnselected)
 DUI_END_MESSAGE_MAP()
 
 void WindowImplBase::OnFinalMessage( HWND hWnd )
@@ -15,6 +32,11 @@ void WindowImplBase::OnFinalMessage( HWND hWnd )
 	m_PaintManager.RemovePreMessageFilter(this);
 	m_PaintManager.RemoveNotifier(this);
 	m_PaintManager.ReapObjects(m_PaintManager.GetRoot());
+}
+
+void WindowImplBase::Notify(DuiLib::TNotifyUI &msg)
+{
+	return CNotifyPump::NotifyPump(msg);
 }
 
 LRESULT WindowImplBase::ResponseDefaultKeyEvent(WPARAM wParam)
@@ -33,23 +55,52 @@ LRESULT WindowImplBase::ResponseDefaultKeyEvent(WPARAM wParam)
 
 UINT WindowImplBase::GetClassStyle() const
 {
-	return CS_DBLCLKS;
+	return UI_CLASSSTYLE_FRAME | CS_DBLCLKS;
 }
 
-CControlUI* WindowImplBase::CreateControl(LPCTSTR pstrClass)
+LPCTSTR WindowImplBase::GetWindowClassName() const
 {
-	return NULL;
+	return _T("DuiClass");
 }
 
-LRESULT WindowImplBase::MessageHandler(UINT uMsg, WPARAM wParam, LPARAM /*lParam*/, bool& /*bHandled*/)
+UILIB_RESOURCETYPE WindowImplBase::GetResourceType() const
 {
-	if (uMsg == WM_KEYDOWN)
-	{
-		switch (wParam)
-		{
+	return UILIB_FILE;
+}
+
+UILIB_MAXMINTYPE WindowImplBase::GetMaxMinType() const
+{
+	return UILIB_WORK;
+}
+
+CDuiString WindowImplBase::GetZIPFileName() const
+{
+	return _T("");
+}
+
+LPCTSTR WindowImplBase::GetResourceID() const
+{
+	return _T("");
+}
+
+CControlUI* WindowImplBase::FindControl(POINT pt)
+{
+	return m_PaintManager.FindControl(pt);
+}
+
+CControlUI* WindowImplBase::FindControl(LPCTSTR pstrName)
+{
+	return m_PaintManager.FindControl(pstrName);
+}
+
+LRESULT WindowImplBase::MessageHandler(UINT uMsg, WPARAM wParam, LPARAM /*lParam*/, bool& bHandled)
+{
+	if (uMsg == WM_KEYDOWN) {
+		switch (wParam) {
 		case VK_RETURN:
 		case VK_ESCAPE:
-			return ResponseDefaultKeyEvent(wParam);
+			bHandled = !!ResponseDefaultKeyEvent(wParam); //修复按一次ESC导致多个窗口关闭的问题
+			return 0;
 		default:
 			break;
 		}
@@ -59,14 +110,12 @@ LRESULT WindowImplBase::MessageHandler(UINT uMsg, WPARAM wParam, LPARAM /*lParam
 
 LRESULT WindowImplBase::OnClose(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
 {
-	bHandled = FALSE;
-	return 0;
+	return (bHandled = FALSE);
 }
 
 LRESULT WindowImplBase::OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
 {
-	bHandled = FALSE;
-	return 0;
+	return (bHandled = FALSE);
 }
 
 #if defined(WIN32) && !defined(UNDER_CE)
@@ -78,7 +127,7 @@ LRESULT WindowImplBase::OnNcActivate(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lPar
 
 LRESULT WindowImplBase::OnNcCalcSize(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
-	return 0;
+	return (bHandled = FALSE);
 }
 
 LRESULT WindowImplBase::OnWindowPosChanging(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
@@ -109,9 +158,9 @@ LRESULT WindowImplBase::OnWindowPosChanging(UINT uMsg, WPARAM wParam, LPARAM lPa
 	return 0;
 }
 
-LRESULT WindowImplBase::OnNcPaint(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
+LRESULT WindowImplBase::OnNcPaint(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
-	return 0;
+	return (bHandled = FALSE);
 }
 
 LRESULT WindowImplBase::OnNcHitTest(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
@@ -147,9 +196,10 @@ LRESULT WindowImplBase::OnNcHitTest(UINT uMsg, WPARAM wParam, LPARAM lParam, BOO
 		&& pt.y >= rcCaption.top && pt.y < rcCaption.bottom ) {
 			CControlUI* pControl = static_cast<CControlUI*>(m_PaintManager.FindControl(pt));
 			if( pControl && _tcsicmp(pControl->GetClass(), _T("ButtonUI")) != 0 && 
-				_tcsicmp(pControl->GetClass(), _T("OptionUI")) != 0 &&
-				_tcsicmp(pControl->GetClass(), _T("TextUI")) != 0 &&
-				_tcsicmp(pControl->GetClass(), _T("SliderUI")) != 0)
+				_tcsicmp(pControl->GetClass(), _T("OptionUI")) 	!= 0 &&
+				_tcsicmp(pControl->GetClass(), _T("TextUI")) 	!= 0 &&
+				_tcsicmp(pControl->GetClass(), _T("SliderUI")) 	!= 0 &&  
+				_tcsicmp(pControl->GetClass(), _T("EditUI"))   	!= 0)
 				return HTCAPTION;
 	}
 
@@ -158,6 +208,11 @@ LRESULT WindowImplBase::OnNcHitTest(UINT uMsg, WPARAM wParam, LPARAM lParam, BOO
 
 LRESULT WindowImplBase::OnGetMinMaxInfo(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
+	if (UILIB_NO == GetMaxMinType())
+	{
+		bHandled = FALSE;
+		return 0;
+	}
 	LPMINMAXINFO lpMMI = (LPMINMAXINFO) lParam;
 
 	MONITORINFO oMonitor = {};
@@ -167,15 +222,22 @@ LRESULT WindowImplBase::OnGetMinMaxInfo(UINT uMsg, WPARAM wParam, LPARAM lParam,
 	CDuiRect rcMonitor = oMonitor.rcMonitor;
 	rcWork.Offset(-oMonitor.rcMonitor.left, -oMonitor.rcMonitor.top);
 
+
+	CDuiRect* prcShow;
+	if (UILIB_FULLSCREEN == GetMaxMinType()) prcShow = &rcMonitor;
+	else if (UILIB_WORK == GetMaxMinType()) prcShow = &rcWork;
 	// 计算最大化时，正确的原点坐标
-	lpMMI->ptMaxPosition.x	= rcWork.left;
-	lpMMI->ptMaxPosition.y	= rcWork.top;
+	lpMMI->ptMaxPosition.x	= prcShow->left;
+	lpMMI->ptMaxPosition.y	= prcShow->top;
 
-	lpMMI->ptMaxTrackSize.x =rcWork.GetWidth();
-	lpMMI->ptMaxTrackSize.y =rcWork.GetHeight();
+	lpMMI->ptMaxSize.x		= prcShow->GetWidth();
+	lpMMI->ptMaxSize.y		= prcShow->GetHeight();
 
-	lpMMI->ptMinTrackSize.x =m_PaintManager.GetMinInfo().cx;
-	lpMMI->ptMinTrackSize.y =m_PaintManager.GetMinInfo().cy;
+	lpMMI->ptMaxTrackSize.x = prcShow->GetWidth();
+	lpMMI->ptMaxTrackSize.y = prcShow->GetHeight();
+
+	lpMMI->ptMinTrackSize.x = m_PaintManager.GetMinInfo().cx;
+	lpMMI->ptMinTrackSize.y = m_PaintManager.GetMinInfo().cy;
 
 	bHandled = FALSE;
 	return 0;
@@ -183,22 +245,25 @@ LRESULT WindowImplBase::OnGetMinMaxInfo(UINT uMsg, WPARAM wParam, LPARAM lParam,
 
 LRESULT WindowImplBase::OnMouseWheel(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
 {
-	bHandled = FALSE;
-	return 0;
+	return (bHandled = FALSE);
 }
 
 LRESULT WindowImplBase::OnMouseHover(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
-	bHandled = FALSE;
-	return 0;
+	return (bHandled = FALSE);
 }
 #endif
+
+LRESULT WindowImplBase::OnTimer(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+{
+	return (bHandled = FALSE);
+}
 
 LRESULT WindowImplBase::OnSize(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
 	SIZE szRoundCorner = m_PaintManager.GetRoundCorner();
 #if defined(WIN32) && !defined(UNDER_CE)
-	if( !::IsIconic(*this) ) {
+	if( !::IsIconic(*this) && (szRoundCorner.cx != 0 || szRoundCorner.cy != 0) ) {
 		CDuiRect rcWnd;
 		::GetWindowRect(*this, &rcWnd);
 		rcWnd.Offset(-rcWnd.left, -rcWnd.top);
@@ -214,16 +279,26 @@ LRESULT WindowImplBase::OnSize(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bH
 
 LRESULT WindowImplBase::OnChar(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
-	bHandled = FALSE;
-	return 0;
+	return (bHandled = FALSE);
 }
 
 LRESULT WindowImplBase::OnSysCommand(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
+	HWND hParent = GetParent(m_hWnd);
+	if( hParent &&
+		(wParam == SC_CLOSE ||
+		wParam == SC_MINIMIZE ||
+		wParam == SC_MAXIMIZE ||
+		wParam == SC_RESTORE)) 
+	{
+		::SendMessage(hParent,WM_SYSCOMMAND, wParam, 0);
+		bHandled = TRUE;
+		return 0;
+	}
 	if (wParam == SC_CLOSE)
 	{
+		PostQuitMessage(0);
 		bHandled = TRUE;
-		SendMessage(WM_CLOSE);
 		return 0;
 	}
 #if defined(WIN32) && !defined(UNDER_CE)
@@ -267,63 +342,119 @@ LRESULT WindowImplBase::OnCreate(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& 
 	m_PaintManager.AddPreMessageFilter(this);
 
 	CDialogBuilder builder;
+	WIN32_FIND_DATA FindFileData;
+	HANDLE hDir;
+
+	if (m_PaintManager.GetResourcePath().IsEmpty())
+	{	// 允许更灵活的资源路径定义
+		CDuiString strResourcePath = m_PaintManager.GetInstancePath();
+		strResourcePath += GetSkinFolder().GetData();
+
+		hDir = FindFirstFile(strResourcePath.GetData(), &FindFileData);
+		if (hDir == INVALID_HANDLE_VALUE) 
+		{
+			//assert(0&&"Invalid skin path \n"); //资源路径无效
+		} 
+		else
+		{
+			m_PaintManager.SetResourcePath(strResourcePath.GetData());
+			FindClose(hDir);
+		}
+	}
+
+	switch(GetResourceType())
+	{
+	case UILIB_ZIP:
+		m_PaintManager.SetResourceZip(GetZIPFileName().GetData(), true);
+		break;
+	case UILIB_ZIPRESOURCE:
+		{
+			HRSRC hResource = ::FindResource(m_PaintManager.GetResourceDll(), GetResourceID(), _T("ZIPRES"));
+			if( hResource == NULL )
+				return 0L;
+			DWORD dwSize = 0;
+			HGLOBAL hGlobal = ::LoadResource(m_PaintManager.GetResourceDll(), hResource);
+			if( hGlobal == NULL ) 
+			{
+#if defined(WIN32) && !defined(UNDER_CE)
+				::FreeResource(hResource);
+#endif
+				return 0L;
+			}
+			dwSize = ::SizeofResource(m_PaintManager.GetResourceDll(), hResource);
+			if( dwSize == 0 )
+				return 0L;
+			m_lpResourceZIPBuffer = new BYTE[ dwSize ];
+			if (m_lpResourceZIPBuffer != NULL)
+			{
+				::CopyMemory(m_lpResourceZIPBuffer, (LPBYTE)::LockResource(hGlobal), dwSize);
+			}
+#if defined(WIN32) && !defined(UNDER_CE)
+			::FreeResource(hResource);
+#endif
+			m_PaintManager.SetResourceZip(m_lpResourceZIPBuffer, dwSize);
+		}
+		break;
+	}
 
 	CControlUI* pRoot=NULL;
-	pRoot = builder.Create(GetSkinFile().GetData(), (UINT)0, this, &m_PaintManager);
-	ASSERT(pRoot);
+	if (GetResourceType() == UILIB_RESOURCE)
+	{
+		STRINGorID xml(_ttoi(GetSkinFile().GetData()));
+		pRoot = builder.Create(xml, _T("xml"), this, &m_PaintManager);
+	}
+	else
+	{
+		pRoot = builder.Create(GetSkinFile().GetData(), (UINT)0, this, &m_PaintManager);
+	}
+	//ASSERT(pRoot && "Load Resouse fail ,check fold and path ,or err in file");
 	if (pRoot==NULL)
 	{
-		MessageBox(NULL,_T("加载资源文件失败"),_T("Duilib"),MB_OK|MB_ICONERROR);
+		MessageBox(NULL,_T("加载资源文件失败"),_T("提示"),MB_OK|MB_ICONERROR);
 		ExitProcess(1);
 		return 0;
 	}
 	m_PaintManager.AttachDialog(pRoot);
 	m_PaintManager.AddNotifier(this);
 
-	InitWindow();
 	return 0;
 }
 
 LRESULT WindowImplBase::OnKeyDown(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
 {
-	bHandled = FALSE;
-	return 0;
+	return (bHandled = FALSE);
 }
 
 LRESULT WindowImplBase::OnKillFocus(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
 {
-	bHandled = FALSE;
-	return 0;
+	return (bHandled = FALSE);
 }
 
 LRESULT WindowImplBase::OnSetFocus(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
 {
-	bHandled = FALSE;
-	return 0;
+	return (bHandled = FALSE);
 }
 
 LRESULT WindowImplBase::OnLButtonDown(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
 {
-	bHandled = FALSE;
-	return 0;
+	return (bHandled = FALSE);
 }
 
 LRESULT WindowImplBase::OnLButtonUp(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
 {
-	bHandled = FALSE;
-	return 0;
+	return (bHandled = FALSE);
 }
 
 LRESULT WindowImplBase::OnMouseMove(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
 {
-	bHandled = FALSE;
-	return 0;
+	return (bHandled = FALSE);
 }
 
 LRESULT WindowImplBase::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	LRESULT lRes = 0;
 	BOOL bHandled = TRUE;
+
 	switch (uMsg)
 	{
 	case WM_CREATE:			lRes = OnCreate(uMsg, wParam, lParam, bHandled); break;
@@ -337,7 +468,7 @@ LRESULT WindowImplBase::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_GETMINMAXINFO:	lRes = OnGetMinMaxInfo(uMsg, wParam, lParam, bHandled); break;
 	case WM_MOUSEWHEEL:		lRes = OnMouseWheel(uMsg, wParam, lParam, bHandled); break;
 	case WM_SIZE:			lRes = OnSize(uMsg, wParam, lParam, bHandled); break;
-	case WM_CHAR:		lRes = OnChar(uMsg, wParam, lParam, bHandled); break;
+	case WM_CHAR:		    lRes = OnChar(uMsg, wParam, lParam, bHandled); break;
 	case WM_SYSCOMMAND:		lRes = OnSysCommand(uMsg, wParam, lParam, bHandled); break;
 	case WM_KEYDOWN:		lRes = OnKeyDown(uMsg, wParam, lParam, bHandled); break;
 	case WM_KILLFOCUS:		lRes = OnKillFocus(uMsg, wParam, lParam, bHandled); break;
@@ -345,7 +476,8 @@ LRESULT WindowImplBase::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_LBUTTONUP:		lRes = OnLButtonUp(uMsg, wParam, lParam, bHandled); break;
 	case WM_LBUTTONDOWN:	lRes = OnLButtonDown(uMsg, wParam, lParam, bHandled); break;
 	case WM_MOUSEMOVE:		lRes = OnMouseMove(uMsg, wParam, lParam, bHandled); break;
-	case WM_MOUSEHOVER:	lRes = OnMouseHover(uMsg, wParam, lParam, bHandled); break;
+	case WM_MOUSEHOVER:	    lRes = OnMouseHover(uMsg, wParam, lParam, bHandled); break;
+	case WM_TIMER:	        lRes = OnTimer(uMsg, wParam, lParam, bHandled); break;
 	default:				bHandled = FALSE; break;
 	}
 	if (bHandled) return lRes;
@@ -360,8 +492,7 @@ LRESULT WindowImplBase::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 LRESULT WindowImplBase::HandleCustomMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
-	bHandled = FALSE;
-	return 0;
+	return (bHandled = FALSE);
 }
 
 LONG WindowImplBase::GetStyle()
@@ -377,7 +508,7 @@ void WindowImplBase::OnClick(TNotifyUI& msg)
 	CDuiString sCtrlName = msg.pSender->GetName();
 	if( sCtrlName == _T("closebtn") )
 	{
-		Close();
+		SendMessage(WM_SYSCOMMAND, SC_CLOSE, 0);
 		return; 
 	}
 	else if( sCtrlName == _T("minbtn"))
@@ -398,9 +529,13 @@ void WindowImplBase::OnClick(TNotifyUI& msg)
 	return;
 }
 
-void WindowImplBase::Notify(TNotifyUI& msg)
+void WindowImplBase::Cleanup()
 {
-	return CNotifyPump::NotifyPump(msg);
+	if (m_lpResourceZIPBuffer != NULL)
+	{
+		delete[] m_lpResourceZIPBuffer;
+		m_lpResourceZIPBuffer = NULL;
+	}
 }
 
 }

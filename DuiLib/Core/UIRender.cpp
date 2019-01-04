@@ -746,11 +746,11 @@ void CRenderEngine::DrawText(HDC hDC, CPaintManagerUI* pManager, RECT& rc, LPCTS
 		}
 
 		
-#ifndef  UNICODE
+#ifndef  _UNICODE
 		int pOutSize = MultiByteToWideChar(NULL, NULL, pstrText, _tcslen(pstrText), NULL, 0);
 		LPWSTR lpwStr = new WCHAR[pOutSize];
 		memset((void*)*lpwStr, 0, sizeof(WCHAR) * pOutSize);
-		MultiByteToWideChar(NULL, NULL, pstrText, _tcslen(pstrText), lpwStr, pOutSize);
+		MultiByteToWideChar(NULL, NULL, pstrText, strlen(pstrText), lpwStr, pOutSize);
 #else
 		LPCTSTR lpwStr = pstrText;
 #endif

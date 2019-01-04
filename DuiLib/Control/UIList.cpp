@@ -686,6 +686,7 @@ void CListUI::SetAttribute(LPCTSTR pstrName, LPCTSTR pstrValue)
     else if( _tcscmp(pstrName, _T("scrollselect")) == 0 ) SetScrollSelect(_tcscmp(pstrValue, _T("true")) == 0);
     else if( _tcscmp(pstrName, _T("multiexpanding")) == 0 ) SetMultiExpanding(_tcscmp(pstrValue, _T("true")) == 0);
     else if( _tcscmp(pstrName, _T("itemfont")) == 0 ) m_ListInfo.nFont = _ttoi(pstrValue);
+	else if( _tcscmp(pstrName, _T("itemheight")) == 0 ) m_ListInfo.nHeight = _ttoi(pstrValue);
     else if( _tcscmp(pstrName, _T("itemalign")) == 0 ) {
         if( _tcsstr(pstrValue, _T("left")) != NULL ) {
             m_ListInfo.uTextStyle &= ~(DT_CENTER | DT_RIGHT);
@@ -1446,6 +1447,50 @@ int CListHeaderItemUI::GetScale() const
 	return m_nScale;
 }
 
+LPCTSTR CListHeaderItemUI::GetNormalImage() const
+{
+	return m_sNormalImage;
+}
+
+void CListHeaderItemUI::SetNormalImage(LPCTSTR pStrImage)
+{
+    m_sNormalImage = pStrImage;
+    Invalidate();
+}
+
+LPCTSTR CListHeaderItemUI::GetHotImage() const
+{
+    return m_sHotImage;
+}
+
+void CListHeaderItemUI::SetHotImage(LPCTSTR pStrImage)
+{
+    m_sHotImage = pStrImage;
+    Invalidate();
+}
+
+LPCTSTR CListHeaderItemUI::GetPushedImage() const
+{
+    return m_sPushedImage;
+}
+
+void CListHeaderItemUI::SetPushedImage(LPCTSTR pStrImage)
+{
+    m_sPushedImage = pStrImage;
+    Invalidate();
+}
+
+LPCTSTR CListHeaderItemUI::GetFocusedImage() const
+{
+    return m_sFocusedImage;
+}
+
+void CListHeaderItemUI::SetFocusedImage(LPCTSTR pStrImage)
+{
+    m_sFocusedImage = pStrImage;
+    Invalidate();
+}
+
 void CListHeaderItemUI::SetAttribute(LPCTSTR pstrName, LPCTSTR pstrValue)
 {
     if( _tcscmp(pstrName, _T("dragable")) == 0 ) SetDragable(_tcscmp(pstrValue, _T("true")) == 0);
@@ -1485,6 +1530,10 @@ void CListHeaderItemUI::SetAttribute(LPCTSTR pstrName, LPCTSTR pstrValue)
 		SetTextPadding(rcTextPadding);
 	}
     else if( _tcscmp(pstrName, _T("showhtml")) == 0 ) SetShowHtml(_tcscmp(pstrValue, _T("true")) == 0);
+    else if( _tcscmp(pstrName, _T("normalimage")) == 0 ) SetNormalImage(pstrValue);
+    else if( _tcscmp(pstrName, _T("hotimage")) == 0 ) SetHotImage(pstrValue);
+    else if( _tcscmp(pstrName, _T("pushedimage")) == 0 ) SetPushedImage(pstrValue);
+    else if( _tcscmp(pstrName, _T("focusedimage")) == 0 ) SetFocusedImage(pstrValue);
     else if( _tcscmp(pstrName, _T("sepimage")) == 0 ) SetSepImage(pstrValue);
 	else if( _tcscmp(pstrName, _T("scale")) == 0 ) {
 		LPTSTR pstr = NULL;
